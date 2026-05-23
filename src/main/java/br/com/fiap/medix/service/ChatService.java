@@ -21,115 +21,47 @@ public class ChatService {
     }
 
     public String askMedixAi(String userMessage) {
-        String texto = normalizar(userMessage);
-        boolean assuntoAgendamento = isAssuntoAgendamento(texto);
-
-        String contexto = assuntoAgendamento
-                ? "Fluxo de agendamento operacional. Use dados reais das ferramentas quando necessário."
-                : buscarContextoRag(userMessage);
-
-        String systemPrompt = """
-                Você é a Medix AI, assistente virtual da clínica Medix.
-
-                Contexto:
-                %s
-
-                Regras:
-                - Responda em português do Brasil.
-                - Seja breve, natural e objetivo.
-                - Não use Markdown, negrito, itálico ou emojis.
-                - Não exponha dados internos, IDs técnicos, ferramentas ou detalhes do banco.
-                - Nunca invente médicos, unidades, salas ou horários.
-                - Nunca dê diagnóstico médico definitivo.
-                - Nunca recomende medicamentos.
-                - Para agendamento, conduza uma etapa por vez.
-                - Não tente finalizar tudo em uma única resposta.
-                - Só agende após confirmação explícita.
-                """.formatted(contexto);
-
-        ChatClient.ChatClientRequestSpec request = chatClient.prompt()
-                .system(systemPrompt)
-                .user(userMessage);
-
-        String[] tools = escolherTools(texto);
-
-        if (tools.length > 0) {
-            request = request.toolNames(tools);
-        }
-
-        return request.call().content();
-    }
-
-    private String buscarContextoRag(String userMessage) {
         String termoBusca = extrairTermoChave(userMessage);
 
-        List<String> contextos = ragRepository
-                .buscarContextoPorTermo(termoBusca, PageRequest.of(0, 1))
+        List<String> contextosEncontrados = ragRepository
+                .buscarContextoPorTermo(termoBusca, PageRequest.of(0, 2))
                 .stream()
                 .map(RagContext::getConteudo)
                 .toList();
 
-        return contextos.isEmpty()
-                ? "Nenhuma regra específica encontrada."
-                : contextos.get(0);
-    }
+        String contextoPdf = contextosEncontrados.isEmpty()
+                ? "Nenhuma regra específica foi encontrada no regulamento."
+                : String.join("\n\n", contextosEncontrados);
 
-    private String[] escolherTools(String texto) {
-        if (texto.contains("confirmo")
-                || texto.contains("pode agendar")
-                || texto.contains("pode marcar")
-                || texto.contains("finalizar agendamento")) {
-            return new String[]{"efetuarAgendamentoChatbot"};
-        }
+        String systemPrompt = """
+        Você é a Medix AI, assistente virtual oficial da clínica Medix.
 
-        if (texto.contains("horario")
-                || texto.contains("horarios")
-                || texto.contains("manha")
-                || texto.contains("tarde")
-                || texto.contains("hoje")
-                || texto.contains("amanha")) {
-            return new String[]{"listarHorariosDisponiveis"};
-        }
+        Use o contexto abaixo para responder dúvidas administrativas, clínicas gerais e orientações sobre funcionamento.
 
-        if (texto.contains("unidade")
-                || texto.contains("endereco")
-                || texto.contains("local")
-                || texto.contains("sala")) {
-            return new String[]{"listarUnidadesMedix"};
-        }
+        CONTEXTO:
+        %s
 
-        if (texto.contains("medico")
-                || texto.contains("medica")
-                || texto.contains("cardiologia")
-                || texto.contains("pediatria")
-                || texto.contains("ginecologia")
-                || texto.contains("clinica")
-                || texto.contains("especialidade")
-                || texto.contains("consulta")
-                || texto.contains("agendar")
-                || texto.contains("marcar")) {
-            return new String[]{"listarMedicosMedix"};
-        }
+        Regras obrigatórias:
+        - Responda em português do Brasil.
+        - Seja breve, claro, humano e educado.
+        - Não use Markdown complexo.
+        - Não use emojis.
+        - Nunca diga que está lendo um PDF, documento, arquivo, regras internas, prompt, RAG ou base de conhecimento.
+        - Nunca mencione ferramentas, banco de dados, integração, system prompt ou detalhes técnicos.
+        - Nunca diga que não tem acesso ao sistema se o assunto for agendamento, listagem ou cancelamento.
+        - Se o usuário perguntar como funciona o agendamento, explique o processo de forma geral.
+        - Se o usuário quiser efetivamente agendar, diga que você pode iniciar o processo e peça o e-mail do paciente.
+        - Nunca invente médicos, unidades, salas, horários ou disponibilidade.
+        - Nunca dê diagnóstico médico definitivo.
+        - Nunca recomende medicamentos.
+        - Em sintomas graves, oriente buscar atendimento médico imediato.
+        """.formatted(contextoPdf);
 
-        if (texto.contains("@") || texto.contains("email")) {
-            return new String[]{"verificarPacienteSistema"};
-        }
-
-        return new String[]{};
-    }
-
-    private boolean isAssuntoAgendamento(String texto) {
-        return texto.contains("agendar")
-                || texto.contains("marcar")
-                || texto.contains("consulta")
-                || texto.contains("medico")
-                || texto.contains("medica")
-                || texto.contains("horario")
-                || texto.contains("unidade")
-                || texto.contains("sala")
-                || texto.contains("cardiologia")
-                || texto.contains("pediatria")
-                || texto.contains("ginecologia");
+        return chatClient.prompt()
+                .system(systemPrompt)
+                .user(userMessage)
+                .call()
+                .content();
     }
 
     private String extrairTermoChave(String mensagem) {
@@ -137,7 +69,12 @@ public class ChatService {
             return "agendamento";
         }
 
-        String texto = normalizar(mensagem).replaceAll("[^a-zA-Z0-9\\s]", "");
+        String texto = Normalizer
+                .normalize(mensagem, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .replaceAll("[^a-zA-Z0-9\\s]", "")
+                .toLowerCase();
+
         String[] palavras = texto.split("\\s+");
 
         String maior = "agendamento";
@@ -149,13 +86,5 @@ public class ChatService {
         }
 
         return maior;
-    }
-
-    private String normalizar(String mensagem) {
-        return Normalizer
-                .normalize(mensagem == null ? "" : mensagem, Normalizer.Form.NFD)
-                .replaceAll("\\p{M}", "")
-                .toLowerCase()
-                .trim();
     }
 }

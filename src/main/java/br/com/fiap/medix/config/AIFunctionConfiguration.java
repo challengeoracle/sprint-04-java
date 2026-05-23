@@ -11,6 +11,7 @@ import br.com.fiap.medix.service.AgendamentoService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
+import br.com.fiap.medix.enums.StatusAgendamento;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -160,7 +161,12 @@ public class AIFunctionConfiguration {
             };
 
             List<LocalDateTime> ocupados = agendamentoRepository
-                    .buscarAgendamentosDoMedicoNoDia(request.medicoId(), inicioDia, fimDia)
+                    .buscarAgendamentosDoMedicoNoDia(
+                            request.medicoId(),
+                            inicioDia,
+                            fimDia,
+                            StatusAgendamento.CANCELADO
+                    )
                     .stream()
                     .map(Agendamento::getDataHoraInicio)
                     .toList();

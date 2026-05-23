@@ -52,4 +52,4 @@
   api:
     security:
       token:
-        secret: ${JWT_SECRET}
+        secret: "FIAPMEDIXCHALLENGE2026SECRETKEYRM559728"

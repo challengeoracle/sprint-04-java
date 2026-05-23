@@ -1,5 +1,6 @@
 package br.com.fiap.medix.repository;
 
+import br.com.fiap.medix.enums.StatusAgendamento;
 import br.com.fiap.medix.model.Agendamento;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -20,13 +21,40 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
             WHERE a.medico.id = :medicoId
             AND a.dataHoraInicio >= :inicio
             AND a.dataHoraInicio < :fim
+            AND a.status <> :statusIgnorado
             """)
     List<Agendamento> buscarAgendamentosDoMedicoNoDia(
             Long medicoId,
             LocalDateTime inicio,
-            LocalDateTime fim
+            LocalDateTime fim,
+            StatusAgendamento statusIgnorado
     );
 
+    @Query("""
+            SELECT a
+            FROM Agendamento a
+            WHERE a.paciente.id = :pacienteId
+            AND a.status <> :statusIgnorado
+            ORDER BY a.dataHoraInicio ASC
+            """)
+    List<Agendamento> buscarAgendamentosDoPaciente(
+            Long pacienteId,
+            StatusAgendamento statusIgnorado
+    );
+
+    @Query("""
+            SELECT a
+            FROM Agendamento a
+            WHERE a.paciente.id = :pacienteId
+            AND a.dataHoraInicio >= :agora
+            AND a.status <> :statusIgnorado
+            ORDER BY a.dataHoraInicio ASC
+            """)
+    List<Agendamento> buscarAgendamentosFuturosDoPaciente(
+            Long pacienteId,
+            LocalDateTime agora,
+            StatusAgendamento statusIgnorado
+    );
     // Busca o próximo compromisso ativo do paciente de forma cronológica
     @Query("SELECT a FROM Agendamento a WHERE a.paciente.id = :pacienteId " +
             "AND a.dataHoraInicio >= :agora " +
