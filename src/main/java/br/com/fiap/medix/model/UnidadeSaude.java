@@ -3,12 +3,16 @@ package br.com.fiap.medix.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
 @Table(name = "TB_UNIDADE_SAUDE")
+@Getter
+@Setter
 @Data
 public class UnidadeSaude {
     @Id

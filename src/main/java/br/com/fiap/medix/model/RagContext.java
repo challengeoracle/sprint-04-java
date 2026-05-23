@@ -2,9 +2,13 @@ package br.com.fiap.medix.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
 @Table(name = "TB_MEDIX_RAG_CONTEXT")
+@Getter
+@Setter
 @Data
 public class RagContext {
 

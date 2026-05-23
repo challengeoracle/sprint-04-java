@@ -4,11 +4,15 @@ import br.com.fiap.medix.enums.StatusAgendamento;
 import br.com.fiap.medix.enums.TipoAgendamento;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "TB_AGENDAMENTO")
+@Getter
+@Setter
 @Data
 public class Agendamento {
     @Id
