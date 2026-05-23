@@ -23,19 +23,31 @@ import java.util.List;
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, SecurityFilter securityFilter) throws Exception {
+    public SecurityFilterChain securityFilterChain(
+            HttpSecurity http,
+            SecurityFilter securityFilter
+    ) throws Exception {
         return http
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
                 .authorizeHttpRequests(auth -> auth
                         // Swagger / OpenAPI
-                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                        .requestMatchers(
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html"
+                        ).permitAll()
 
                         // Auth
                         .requestMatchers(HttpMethod.POST, "/auth/login", "/auth/registrar").permitAll()
 
-                        // Chat IA - AGORA PROTEGIDO
+                        // Preflight CORS
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                        // Chat IA
                         .requestMatchers("/api/chat/**").authenticated()
 
                         // Admin
@@ -58,16 +70,38 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // Adicione as URLs do seu frontend em produção
         configuration.setAllowedOrigins(List.of(
                 "http://localhost:4200",
                 "http://localhost:5173",
-                "https://angular-sprint-04.vercel.app"
+
+                "https://angular-sprint-04.vercel.app",
+                "https://angular-sprint-04-challengeoracles-projects.vercel.app",
+                "https://angular-sprint-04-git-main-challengeoracles-projects.vercel.app",
+                "https://angular-sprint-04-kdvg57joo-challengeoracles-projects.vercel.app"
         ));
 
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Cache-Control"));
-        configuration.setExposedHeaders(List.of("Authorization"));
+        configuration.setAllowedMethods(List.of(
+                "GET",
+                "POST",
+                "PUT",
+                "DELETE",
+                "PATCH",
+                "OPTIONS"
+        ));
+
+        configuration.setAllowedHeaders(List.of(
+                "Authorization",
+                "Content-Type",
+                "Cache-Control",
+                "Accept",
+                "Origin",
+                "X-Requested-With"
+        ));
+
+        configuration.setExposedHeaders(List.of(
+                "Authorization"
+        ));
+
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -82,7 +116,9 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
+    public AuthenticationManager authenticationManager(
+            AuthenticationConfiguration configuration
+    ) throws Exception {
         return configuration.getAuthenticationManager();
     }
 }
