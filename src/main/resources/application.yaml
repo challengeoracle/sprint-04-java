@@ -1,55 +1,61 @@
-  spring:
-    application:
-      name: medix-api
+spring:
+  application:
+    name: medix-api
 
-    datasource:
-      url: ${DB_URL}
-      username: ${DB_USERNAME}
-      password: ${DB_PASSWORD}
-      driver-class-name: oracle.jdbc.OracleDriver
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: oracle.jdbc.OracleDriver
+    hikari:
+      connection-timeout: 10000
+      initialization-fail-timeout: 10000
 
-    jpa:
-      database-platform: org.hibernate.dialect.OracleDialect
+  jpa:
+    database-platform: org.hibernate.dialect.OracleDialect
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    properties:
       hibernate:
-        ddl-auto: none
-      show-sql: false
-      properties:
-        hibernate:
-          format_sql: true
+        format_sql: true
 
-    flyway:
-      enabled: true
-      locations: classpath:db/migration
-      baseline-on-migrate: true
-      baseline-version: "0"
-      validate-on-migrate: true
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    baseline-version: "0"
+    validate-on-migrate: true
 
-    ai:
-      openai:
-        base-url: https://api.groq.com/openai/v1
+  ai:
+    openai:
+      base-url: https://api.groq.com/openai/v1
+      api-key: ${GROQ_API_KEY}
+      chat:
+        options:
+          model: llama-3.1-8b-instant
+          temperature: 0.7
 
-        api-key: ${GROQ_API_KEY}
+server:
+  port: ${PORT:8080}
 
-        chat:
-          options:
-            model: llama-3.1-8b-instant
-            temperature: 0.7
+logging:
+  level:
+    root: INFO
+    br.com.fiap.medix: INFO
+    org.springframework.ai: WARN
+    org.springframework.web: WARN
+    org.springframework.security: WARN
+    org.hibernate: WARN
+    org.hibernate.SQL: OFF
+    org.hibernate.orm.jdbc.bind: OFF
+    org.flywaydb: INFO
+    com.zaxxer.hikari: INFO
 
-  logging:
-    level:
-      root: INFO
-      br.com.fiap.medix: INFO
-      org.springframework.ai: WARN
-      org.springframework.web: WARN
-      org.springframework.security: WARN
-      org.hibernate: WARN
-      org.hibernate.SQL: OFF
-      org.hibernate.orm.jdbc.bind: OFF
+  pattern:
+    console: "%d{HH:mm:ss} %-5level %logger{40} - %msg%n"
 
-    pattern:
-      console: "%d{HH:mm:ss} %-5level %logger{40} - %msg%n"
-
-  api:
-    security:
-      token:
-        secret: "FIAPMEDIXCHALLENGE2026SECRETKEYRM559728"
+api:
+  security:
+    token:
+      secret: ${JWT_SECRET}
